@@ -5,6 +5,7 @@ import threading
 
 TIMEOUT = 10
 
+
 class Server:
 
     def __init__(self, name):
@@ -21,7 +22,7 @@ class Server:
         self.begin = None
 
     def start_server(self):
-        print("Server started, listening on 172.1.0.49 address")
+        print("Server started, listening on {IP} address".format(IP=self.server_ip))
         while True:
             self.waiting_for_clients()
             if self.server_socket:
@@ -47,10 +48,11 @@ class Server:
     def broadcast_offer(self):
 
         self.begin = time.time()
-        broadcast_ip = '255.255.255.255'
+        broadcast_ip = '172.1.255.255'
         try:
             sock = socket.socket(socket.AF_INET,  # Internet
                                  socket.SOCK_DGRAM)  # UDP
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         except socket.error:
             return
 
@@ -58,7 +60,7 @@ class Server:
             magic_cookie = 0xfeedbeef
             message_type = 0x2
 
-            message = struct.pack("!IbH", magic_cookie, message_type, self.port_number)
+            message = struct.pack("IbH", magic_cookie, message_type, self.port_number)
 
             i = 0
             while i < 10:
@@ -81,10 +83,14 @@ class Server:
         threads = []
         while elapsed < 10:  # while elapsed time is under 10 seconds keep assigning to groups
 
-            connection_socket, address = self.server_socket.accept()
+            try:
+                connection_socket, address = self.server_socket.accept()
+            except socket.error:
+                elapsed = time.time() - self.begin
+                continue
 
             connection_thread = threading.Thread(target=self.connect_to_client,
-                                                 args=(connection_socket, address, group_number, ))
+                                                 args=(connection_socket, address, group_number,))
             connection_thread.start()
             threads.insert(0, connection_thread)
             group_number = (group_number + 1) % 2
@@ -176,17 +182,39 @@ class Server:
             t.join()
 
         if sum_group1 > sum_group2:
-            message = "Game over!\nGroup 1 typed in {} characters. Group 2 typed in {} " \
-                      "characters.\nGroup 1 wins!\n\nCongratulations to the winners:\n==".format(sum_group1, sum_group2)
+            message = "Game over!\nGroup 1 typed in {sum1} characters. Group 2 typed in {sum2} " \
+                      "characters.\nGroup 1 wins!\n\nCongratulations to the winners:\n==".format(sum1=sum_group1,
+                                                                                                 sum2=sum_group2)
             for player in self.group1:
                 message += "\n" + player[0]
+            if self.max_score < sum_group1:
+                self.max_score = sum_group1
+                self.best_team_ever = self.group1
+            if self.min_score > sum_group2:
+                self.max_score = sum_group2
         elif sum_group2 > sum_group1:
-            message = "Game over!\nGroup 1 typed in {} characters. Group 2 typed in {} " \
-                      "characters.\nGroup 2 wins!\n\nCongratulations to the winners:\n==".format(sum_group1, sum_group2)
+            message = "Game over!\nGroup 1 typed in {sum1} characters. Group 2 typed in {sum2} " \
+                      "characters.\nGroup 2 wins!\n\nCongratulations to the winners:\n==".format(sum1=sum_group1,
+                                                                                                 sum2=sum_group2)
             for player in self.group2:
                 message += "\n" + player[0]
+            if self.max_score < sum_group2:
+                self.max_score = sum_group2
+                self.best_team_ever = self.group2
+            if self.min_score > sum_group1:
+                self.min_score = sum_group1
         else:
             message = "Game over!\nGroup 1 and Group 2 typed in {} characters. It's a draw!".format(sum_group1)
+            if self.max_score < sum_group1:
+                self.max_score = sum_group1
+                self.best_team_ever = self.group1
+            if self.min_score > sum_group1:
+                self.min_score = sum_group1
+        message += "the maximum score ever was: {max}\nthe minimum score ever was{min}\n".format(max=self.max_score,
+                                                                                                 min=self.min_score)
+        message += "the best teams to play the game are:\n=="
+        for player in self.best_team_ever:
+            message += "\n" + player[0]
         print(message)
 
         for player in self.group1:
@@ -221,4 +249,3 @@ class Server:
                 return
 
         player[3] += key_counter
-

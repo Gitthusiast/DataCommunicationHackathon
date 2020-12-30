@@ -1,7 +1,7 @@
 import socket
 import struct
 import time
-import getch
+import msvcrt
 import multiprocessing
 
 TIMEOUT = 15
@@ -12,7 +12,7 @@ class Client:
     def __init__(self, name):
 
         self.name = name
-        self.client_ip = "172.1.0.49"
+        self.client_ip = '192.168.0.186'
         self.udp_port = 13117
         self.server_port = None
         self.server_ip = None
@@ -50,7 +50,7 @@ class Client:
             if packet:  # successfully received udp offer
                 message, self.server_ip = packet
 
-                magic_cookie, message_type, self.server_port = struct.unpack("!IbH", message)
+                magic_cookie, message_type, self.server_port = struct.unpack("IbH", message)
                 if magic_cookie != 0xfeedbeef:  # magicCookie
                     print("the message is rejected not a magic cookie")
 
@@ -127,7 +127,7 @@ class Client:
         while True:
 
             if timeout > 0:
-                keypress = getch.getch()
+                keypress = msvcrt.getch()
                 sock.sendall(keypress)
             else:  # timeout passed
                 break
