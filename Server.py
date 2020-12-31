@@ -6,6 +6,11 @@ from scapy.arch import get_if_addr
 
 TIMEOUT = 10
 BUFFER_SIZE = 2048
+# constants for group play indexes:
+GROUP_NAME_INDEX = 0
+CONNECTION_SOCKET_INDEX = 1
+CLIENT_ADDRESS_INDEX = 2
+KEY_COUNTER_INDEX = 3
 
 
 class Server:
@@ -129,12 +134,17 @@ class Server:
         welcoming_message += "\nStart pressing keys on your keyboard as fast as you can!!\n"
 
         for player in self.group1:
-            conn = player[1]
-            conn.sendall(welcoming_message.encode())
-
+            try:
+                conn = player[CONNECTION_SOCKET_INDEX]
+                conn.sendall(welcoming_message.encode())
+            except socket.error:
+                pass
         for player in self.group2:
-            conn = player[1]
-            conn.sendall(welcoming_message.encode())
+            try:
+                conn = player[CONNECTION_SOCKET_INDEX]
+                conn.sendall(welcoming_message.encode())
+            except socket.error:
+                pass
 
     def connect_to_client(self, connection_socket, client_address, group_number):
         """
@@ -206,9 +216,9 @@ class Server:
         sum_group2 = 0
         # after the while we should close the connection of each player
         for player in self.group1:
-            sum_group1 += player[3]
+            sum_group1 += player[KEY_COUNTER_INDEX]
         for player in self.group2:
-            sum_group2 += player[3]
+            sum_group2 += player[KEY_COUNTER_INDEX]
         for t in threads:
             t.join()
 
@@ -217,7 +227,7 @@ class Server:
                       "characters.\nGroup 1 wins!\n\nCongratulations to the winners:\n==".format(sum1=sum_group1,
                                                                                                  sum2=sum_group2)
             for player in self.group1:
-                message += "\n" + player[0]
+                message += "\n" + player[GROUP_NAME_INDEX]
             if self.max_score < sum_group1:
                 self.max_score = sum_group1
                 self.best_team_ever = self.group1
@@ -228,7 +238,7 @@ class Server:
                       "characters.\nGroup 2 wins!\n\nCongratulations to the winners:\n==".format(sum1=sum_group1,
                                                                                                  sum2=sum_group2)
             for player in self.group2:
-                message += "\n" + player[0]
+                message += "\n" + player[GROUP_NAME_INDEX]
             if self.max_score < sum_group2:
                 self.max_score = sum_group2
                 self.best_team_ever = self.group2
@@ -245,19 +255,20 @@ class Server:
                                                                                                  min=self.min_score)
         message += "\nThe best teams to play the game are:\n=="
         for player in self.best_team_ever:
-            message += "\n" + player[0]
+            message += "\n" + player[GROUP_NAME_INDEX]
         print(message)
 
         for player in self.group1:
             try:
-                player[1].sendall(message.encode())
-                player[1].close()
+                player[CONNECTION_SOCKET_INDEX].sendall(message.encode())
+                player[CONNECTION_SOCKET_INDEX].close()
             except:
                 pass
         for player in self.group2:
             try:
-                player[1].sendall(message.encode())
-                player[1].close()
+                player[CONNECTION_SOCKET_INDEX].sendall(message.encode())
+                player[CONNECTION_SOCKET_INDEX].close()
+
             except:
                 pass
 
@@ -268,8 +279,8 @@ class Server:
             this function receives the keys sent by each client and counts them
             :param player - tuple of group_name, connection_socket, client_address, key_counter
         """
-        connection_socket = player[1]
-        key_counter = player[3]
+        connection_socket = player[CONNECTION_SOCKET_INDEX]
+        key_counter = player[CLIENT_ADDRESS_INDEX]
 
         while True:
             timeout = TIMEOUT - (time.time() - self.begin)
@@ -285,4 +296,4 @@ class Server:
             except socket.error:
                 return
 
-        player[3] += key_counter
+        player[KEY_COUNTER_INDEX] += key_counter

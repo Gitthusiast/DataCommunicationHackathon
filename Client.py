@@ -65,9 +65,11 @@ class Client:
                 magic_cookie, message_type, self.server_port = struct.unpack("IbH", message)
                 if magic_cookie != 0xfeedbeef:  # magicCookie
                     print("the message is rejected not a magic cookie")
+                    return False
 
                 if message_type != 0x2:  # offer message
                     print("only 0x2 offer types are supported")
+                    return False
 
                 # receive offer
                 print("Recieved offer from {IP}, attempting to connect...".format(IP=self.server_ip))
@@ -185,6 +187,10 @@ class Client:
     def recvall_udp(self, sock, length):
         """
         Implementing a recvall function over UDP based on predefined messaged length.
+
+        This function throws exception sokect.error
+        that are needed to be caught by caller function were there is a try and a catch
+
         :param sock: connected server TCP socket
         :type sock: socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         :param length: Length of expected message
