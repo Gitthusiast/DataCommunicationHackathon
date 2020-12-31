@@ -12,6 +12,7 @@ CONNECTION_SOCKET_INDEX = 1
 CLIENT_ADDRESS_INDEX = 2
 KEY_COUNTER_INDEX = 3
 
+
 class Server:
 
     def __init__(self, name):
@@ -267,6 +268,7 @@ class Server:
             try:
                 player[CONNECTION_SOCKET_INDEX].sendall(message.encode())
                 player[CONNECTION_SOCKET_INDEX].close()
+
             except:
                 pass
 
