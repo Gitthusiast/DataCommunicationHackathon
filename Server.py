@@ -133,12 +133,17 @@ class Server:
         welcoming_message += "\nStart pressing keys on your keyboard as fast as you can!!\n"
 
         for player in self.group1:
-            conn = player[1]
-            conn.sendall(welcoming_message.encode())
-
+            try:
+                conn = player[CONNECTION_SOCKET_INDEX]
+                conn.sendall(welcoming_message.encode())
+            except socket.error:
+                pass
         for player in self.group2:
-            conn = player[1]
-            conn.sendall(welcoming_message.encode())
+            try:
+                conn = player[CONNECTION_SOCKET_INDEX]
+                conn.sendall(welcoming_message.encode())
+            except socket.error:
+                pass
 
     def connect_to_client(self, connection_socket, client_address, group_number):
         """
