@@ -289,4 +289,4 @@ class Server:
             except socket.error:
                 return
 
-        player[3] += key_counter
+        player[KEY_COUNTER_INDEX] += key_counter
